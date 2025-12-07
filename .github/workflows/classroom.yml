@@ -1,0 +1,59 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Generate main.cpp
+      id: generate-main-cpp
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Generate main.cpp
+        setup-command: ''
+        command: bash ./generate_main.sh
+        timeout: 10
+    - name: Compile
+      id: compile
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Compile
+        setup-command: ''
+        command: g++ --std=c++17 main.cpp -o main
+        timeout: 10
+        max-score: 5
+    - name: Test
+      id: test
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test
+        setup-command: ''
+        command: "./main"
+        input: ''
+        expected-output: 'front: error, queue is empty, cannot access the front back:
+          error, queue is empty, cannot access the back queue A length: 1 queue A
+          front: -5 queue A back: -5 queue A length: 0 front: error, queue is empty,
+          cannot access the front back: error, queue is empty, cannot access the back
+          queue A is full! queue A length: 10 queue A front: 0 queue A back: 9 queue
+          A contains: 0 1 2 3 4 5 6 7 8 9  queue A is now empty queue B length: 10
+          queue B front: 0 queue B back: 9 queue B is now empty queue C length: 10
+          queue C front: 0 queue C back: 9'
+        comparison-method: contains
+        timeout: 10
+        max-score: 10
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        GENERATE-MAIN-CPP_RESULTS: "${{steps.generate-main-cpp.outputs.result}}"
+        COMPILE_RESULTS: "${{steps.compile.outputs.result}}"
+        TEST_RESULTS: "${{steps.test.outputs.result}}"
+      with:
+        runners: generate-main-cpp,compile,test
